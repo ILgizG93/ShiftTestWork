@@ -10,10 +10,10 @@ class Token(BaseModel):
     refresh_token: str
 
 class TokenData(BaseModel):
-    username: str = None
+    login: str = None
 
 class UserBase(BaseModel):
-    username: str
+    login: str
 
 class UserCreate(UserBase):
     password: str
@@ -23,7 +23,7 @@ class UserCreate(UserBase):
 
 class User(TunedModel):
     id: int
-    username: str
+    login: str
     full_name: str
     salary: int
     next_raise_date: datetime = None
