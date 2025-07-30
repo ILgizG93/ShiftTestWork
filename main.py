@@ -1,9 +1,14 @@
 from fastapi import FastAPI
 import uvicorn
 
-# Настройки приложения
-app = FastAPI()
+from config.settings import Settings
 
+
+def main() -> None:
+    app = FastAPI()
+    settings: Settings = Settings()
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)     # for debug
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    main()
