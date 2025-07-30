@@ -21,6 +21,7 @@ class Users(ShiftBase):
 class Employees(ShiftBase):
     __tablename__ = "employees"
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    full_name: Mapped[str]
     salary: Mapped[int]
     next_raise_date: Mapped[datetime]
     
