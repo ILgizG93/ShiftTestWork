@@ -8,8 +8,8 @@ from .database import DataBaseServer
 load_dotenv()
 
 class Settings(BaseSettings):
-    secret_key: str = os.environ.get("SECRET_KEY")
-    algorithm: str = os.environ.get("ALGORITHM")
+    secret_key: str
+    algorithm: str
     access_token_expire_time: int = os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 30)
     refresh_token_expire_days: int = os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", 14)
 
@@ -20,3 +20,5 @@ class Settings(BaseSettings):
         os.environ.get("DB_PASS"), 
         os.environ.get("DB_NAME")
     )
+
+    log_config_file: str
