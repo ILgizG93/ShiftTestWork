@@ -1,7 +1,6 @@
 from typing import Annotated, Callable
 
-from fastapi import Depends, status
-from fastapi.responses import JSONResponse
+from fastapi import Depends, Response, status
 from sqlalchemy import UUID, Cast, CursorResult, Insert, RowMapping, Select, String, insert, exc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,7 +20,7 @@ logger = init_logger("app")
 async def _user_create(
     body: UserCreate,
     session: DBSession
-) -> JSONResponse:
+) -> Response:
     body: dict = body.model_dump(exclude_none=True)
     employee: dict = {
         'full_name': body.pop('full_name'),
@@ -35,20 +34,20 @@ async def _user_create(
 
         body['password'] = hash_password(body.get('password'))
         body.update( {'employee_id': employee.id } )
-        query = insert(Users).values(**body).returning(Cast(Users.id, String).label('id'), Users.login)
+        query = insert(Users).values(**body).returning(Cast(Users.id, String).label('user_id'), Users.login)
         
         result: CursorResult = await session.execute(query)
         user: dict = dict(result.mappings().fetchone())
-        user.update( { 'status_code': 200 } )
+        user.update( { 'employee_id': str(employee.id), 'status_code': 200 } )
         await session.commit()
         logger.info(f'Add user: {str(body)}')
-        return JSONResponse(
+        return Response(
             content=user
         )
     except exc.SQLAlchemyError as err:
         await session.rollback()
         logger.error(f'Add user: {err.args[0]}')
-        return JSONResponse(
+        return Response(
             content={ 'status_code': 500, 'error': err.args[0] }, 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
@@ -56,7 +55,7 @@ async def _user_create(
 async def _get_salary(
     employee_id: UUID,
     session: DBSession
-) -> JSONResponse:
+) -> Response:
     query: Select = select(Employees.id, Employees.salary, Employees.full_name, Employees.next_raise_date).\
         where(Employees.id == employee_id)
     result: CursorResult = await session.execute(query)
@@ -66,7 +65,7 @@ async def _get_salary(
         return salary
     else:
         logger.info(f'Employee\'s (id = {str(employee_id)}) salary not found')
-        return JSONResponse(
+        return Response(
             content={ 'status_code': 404 }, 
             status_code=status.HTTP_404_NOT_FOUND
         )

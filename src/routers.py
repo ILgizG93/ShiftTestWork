@@ -1,8 +1,7 @@
 from typing import Annotated, Callable
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import Settings
@@ -17,10 +16,10 @@ DBSession = Annotated[AsyncSession, Depends(session)]
 router: APIRouter = APIRouter()
 
 
-@router.post("/user/create", response_class=JSONResponse)
-async def user_create(body: UserCreate, session: DBSession) -> JSONResponse:
+@router.post("/user/create", status_code=status.HTTP_201_CREATED)
+async def user_create(body: UserCreate, session: DBSession) -> Response:
     return await _user_create(body, session)
 
 @router.post("/user/{user_id}/salary/get")
-async def get_salary(user_id: UUID, session: DBSession) -> JSONResponse:
+async def get_salary(user_id: UUID, session: DBSession) -> Response:
     return await _get_salary(user_id, session)
