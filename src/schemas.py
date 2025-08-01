@@ -21,13 +21,14 @@ class UserCreate(UserBase):
     salary: int
     next_raise_date: datetime = None
 
-class User(TunedModel):
-    id: int
-    login: str
-    full_name: str
+class UserSalary(TunedModel):
+    user_id: str
+    employee_id: str
     salary: int
     next_raise_date: datetime = None
-    is_active: bool = None
+
+class User(UserBase, UserSalary):
+    full_name: str
 
 class UserInDB(User):
     hashed_password: str
