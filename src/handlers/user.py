@@ -59,7 +59,7 @@ async def _user_create(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-async def _get_salary(
+async def _get_user_salary(
     user_id: UUID,
     session: DBSession
 ) -> UserSalary:

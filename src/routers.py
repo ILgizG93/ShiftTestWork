@@ -1,11 +1,11 @@
 from typing import Annotated, Callable
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import Settings
-from src.handlers.user import _get_salary, _user_create
+from src.handlers.user import _get_user_salary, _user_create
 from src.schemas import User, UserCreate, UserSalary
 
 
@@ -21,5 +21,5 @@ async def user_create(body: UserCreate, session: DBSession) -> User:
     return await _user_create(body, session)
 
 @router.post("/user/{user_id}/salary/get", response_model=UserSalary)
-async def get_salary(user_id: UUID, session: DBSession) -> UserSalary:
-    return await _get_salary(user_id, session)
+async def get_user_salary(user_id: UUID, session: DBSession) -> UserSalary | None:
+    return await _get_user_salary(user_id, session)

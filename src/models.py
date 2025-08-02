@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import ForeignKey, String, text, UUID
+from sqlalchemy import ForeignKey, String, UUID
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 class ShiftBase(DeclarativeBase):
