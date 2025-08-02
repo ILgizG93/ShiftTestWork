@@ -7,13 +7,12 @@ class TunedModel(BaseModel):
 
 class Token(BaseModel):
     access_token: str
-    refresh_token: str
-
-class TokenData(BaseModel):
-    login: str = None
 
 class UserBase(BaseModel):
     login: str
+
+class UserAuth(UserBase):
+    password: str
 
 class UserCreate(UserBase):
     password: str
@@ -29,9 +28,3 @@ class UserSalary(TunedModel):
 
 class User(UserBase, UserSalary):
     full_name: str
-
-class UserInDB(User):
-    hashed_password: str
-
-class RefreshToken(BaseModel):
-    refresh_token: str

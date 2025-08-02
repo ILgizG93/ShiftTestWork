@@ -1,22 +1,26 @@
+from datetime import timedelta
+import logging
 from typing import Annotated, Callable
 
-from fastapi import Depends, Response, status
+from fastapi import Depends, HTTPException, Response, Security, status
+from fastapi_jwt import JwtAccessBearer, JwtAuthorizationCredentials
 from sqlalchemy import UUID, Cast, Insert, Result, Select, String, insert, exc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.dml import ReturningInsert
 
 from config.settings import Settings
 from loggers import init_logger
-from src.handlers.password import hash_password
+from src.handlers.password import hash_password, verify_password
 from src.models import Employees, Users
-from src.schemas import User, UserCreate, UserSalary
+from src.schemas import User, UserAuth, UserCreate, UserSalary
 
 
 settings: Settings = Settings()
 session: Callable = settings.database.get_session_async
 DBSession = Annotated[AsyncSession, Depends(session)]
-logger = init_logger("app")
+logger: logging = init_logger("app")
 
+access_security = JwtAccessBearer(secret_key=settings.secret_key)
 
 async def _user_create(
     body: UserCreate,
@@ -59,7 +63,45 @@ async def _user_create(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-async def _get_user_salary(
+async def _user_token_get(
+    user: UserAuth,
+    session: DBSession
+) -> dict:
+    query: Select = select(Cast(Users.id, String).label('user_id'), Users.login, Users.password).where(Users.login == user.login)
+    result: Result = await session.execute(query)
+    if (response:= result.mappings().fetchone()):
+        response: dict = dict(response)
+        if (verify_password(user.password, response.pop('password'))):
+            logger.info(f'Get user: {str(response)}')
+            return {
+                'access_token': access_security.create_access_token(
+                    subject=response,
+                    expires_delta=timedelta(minutes=settings.access_token_expire_time)
+                )
+            }
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+def current_user_get(
+    credentials: JwtAuthorizationCredentials = Security(access_security)
+) -> dict:
+    return credentials.subject
+
+def login_required(
+    user: dict = Depends(current_user_get)
+) -> dict:
+    if user:
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+async def _user_salary_get(
     user_id: UUID,
     session: DBSession
 ) -> UserSalary:
@@ -76,9 +118,3 @@ async def _get_user_salary(
     else:
         logger.info(f'User\'s (id = {str(user_id)}) salary not found')
         return Response(status_code=status.HTTP_404_NOT_FOUND)
-
-async def _login():
-    pass
-
-async def _logout():
-    pass

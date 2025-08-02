@@ -10,7 +10,7 @@ class ShiftBase(DeclarativeBase):
 class Users(ShiftBase):
     __tablename__ = "users"
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    login:  Mapped[str] = mapped_column(String(20), index=True)
+    login:  Mapped[str] = mapped_column(String(20), index=True, unique=True)
     password:  Mapped[str] = mapped_column(String(100))
     employee_id: Mapped[UUID] = mapped_column(ForeignKey("employees.id"))
     
