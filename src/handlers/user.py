@@ -1,26 +1,27 @@
-from datetime import timedelta
 import logging
 from typing import Annotated, Callable
 
 from fastapi import Depends, HTTPException, Response, Security, status
-from fastapi_jwt import JwtAccessBearer, JwtAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import UUID, Cast, Insert, Result, Select, String, insert, exc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.dml import ReturningInsert
+from jwt.exceptions import InvalidTokenError
 
 from config.settings import Settings
 from loggers import init_logger
+from src.handlers.token import decode_jwt, encode_jwt
 from src.handlers.password import hash_password, verify_password
 from src.models import Employees, Users
-from src.schemas import User, UserAuth, UserCreate, UserSalary
+from src.schemas import Token, User, UserAuth, UserCreate, UserSalary
 
 
 settings: Settings = Settings()
 session: Callable = settings.database.get_session_async
 DBSession = Annotated[AsyncSession, Depends(session)]
 logger: logging = init_logger("app")
+http_bearer = HTTPBearer()
 
-access_security = JwtAccessBearer(secret_key=settings.secret_key)
 
 async def _user_create(
     body: UserCreate,
@@ -66,7 +67,7 @@ async def _user_create(
 async def _user_token_get(
     user: UserAuth,
     session: DBSession
-) -> dict:
+) -> Token:
     query: Select = select(Cast(Users.id, String).label('user_id'), Users.login, Users.password).where(Users.login == user.login)
     result: Result = await session.execute(query)
     if (response:= result.mappings().fetchone()):
@@ -75,12 +76,15 @@ async def _user_token_get(
         hashed_password: str = response.pop('password')
         if (verify_password(password, hashed_password.encode())):
             logger.info(f'Get user: {str(response)}')
-            return {
-                'access_token': access_security.create_access_token(
-                    subject=response,
-                    expires_delta=timedelta(minutes=settings.access_token_expire_time)
-                )
+            jwt_payload: dict = {
+                "sub": response.get('user_id'),
+                "user_id": response.get('user_id'),
+                "login": response.get('login')
             }
+            return Token(
+                token_type='Bearer',
+                access_token=encode_jwt(jwt_payload)
+            )
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Incorrect username or password",
@@ -88,9 +92,16 @@ async def _user_token_get(
     )
 
 def current_user_get(
-    credentials: JwtAuthorizationCredentials = Security(access_security)
+    credentials: HTTPAuthorizationCredentials = Depends(http_bearer)
 ) -> dict:
-    return credentials.subject
+    try:
+        payload: dict = decode_jwt(token=credentials.credentials)
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token error"
+        )
+    return payload
 
 def login_required(
     user: dict = Depends(current_user_get)

@@ -26,7 +26,7 @@ async def user_create(
 async def user_login(
     token: dict = Depends(_user_token_get)
 ) -> Token:
-    return Token(**token)
+    return token
 
 @router.get("/user/salary/get", response_model=UserSalary)
 async def user_salary_get(

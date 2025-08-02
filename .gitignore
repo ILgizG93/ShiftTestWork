@@ -4,3 +4,4 @@ __pycache__/
 migration/versions/
 log/
 .vscode/
+certs/

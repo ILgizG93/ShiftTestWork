@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
@@ -10,6 +11,8 @@ load_dotenv()
 class Settings(BaseSettings):
     secret_key: str
     algorithm: str
+    private_key_file: Path
+    public_key_file: Path
     access_token_expire_time: int = os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 30)
     refresh_token_expire_days: int = os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", 14)
 
