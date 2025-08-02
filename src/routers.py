@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import Settings
-from src.handlers.user import _user_create, _user_token_get, _user_salary_get, login_required
+from src.handlers.token import create_access_token
+from src.handlers.user import _user_create, _user_token_get, _user_salary_get, login_required, protected_refresh
 from src.schemas import Token, User, UserCreate, UserSalary
 
 
@@ -28,9 +29,27 @@ async def user_login(
 ) -> Token:
     return token
 
-@router.get("/user/salary/get", response_model=UserSalary)
+@router.get(
+    "/user/salary/get", 
+    response_model=UserSalary,
+    response_model_exclude_unset=True
+)
 async def user_salary_get(
     session: DBSession,
     user: dict = Depends(login_required)
 ) -> UserSalary | None:
     return await _user_salary_get(user.get('user_id'), session)
+
+@router.post(
+    "/token/refresh/",
+    response_model=Token,
+    response_model_exclude_none=True,
+    response_model_exclude_unset=True
+)
+def token_refresh(
+    user: dict = Depends(protected_refresh)
+) -> Token:
+    access_token: str = create_access_token(user)
+    return Token(
+        access_token=access_token
+    )

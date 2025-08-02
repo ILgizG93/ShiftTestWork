@@ -1,7 +1,8 @@
+from functools import partial
 import logging
 from typing import Annotated, Callable
 
-from fastapi import Depends, HTTPException, Response, Security, status
+from fastapi import Depends, HTTPException, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import UUID, Cast, Insert, Result, Select, String, insert, exc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,7 @@ from jwt.exceptions import InvalidTokenError
 
 from config.settings import Settings
 from loggers import init_logger
-from src.handlers.token import decode_jwt, encode_jwt
+from src.handlers.token import ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE, TOKEN_TYPE_FIELD, create_access_token, create_refresh_token, decode_jwt
 from src.handlers.password import hash_password, verify_password
 from src.models import Employees, Users
 from src.schemas import Token, User, UserAuth, UserCreate, UserSalary
@@ -65,25 +66,22 @@ async def _user_create(
         )
 
 async def _user_token_get(
-    user: UserAuth,
+    user_auth: UserAuth,
     session: DBSession
 ) -> Token:
-    query: Select = select(Cast(Users.id, String).label('user_id'), Users.login, Users.password).where(Users.login == user.login)
+    query: Select = select(Cast(Users.id, String).label('user_id'), Users.login, Users.password).where(Users.login == user_auth.login)
     result: Result = await session.execute(query)
     if (response:= result.mappings().fetchone()):
-        password: str = user.password
-        response: dict = dict(response)
-        hashed_password: str = response.pop('password')
+        password: str = user_auth.password
+        user: dict = dict(response)
+        hashed_password: str = user.pop('password')
         if (verify_password(password, hashed_password.encode())):
-            logger.info(f'Get user: {str(response)}')
-            jwt_payload: dict = {
-                "sub": response.get('user_id'),
-                "user_id": response.get('user_id'),
-                "login": response.get('login')
-            }
+            logger.info(f'Get user: {str(user)}')
+            access_token: str = create_access_token(user)
+            refresh_token: str = create_refresh_token(user)
             return Token(
-                token_type='Bearer',
-                access_token=encode_jwt(jwt_payload)
+                access_token=access_token,
+                refresh_token=refresh_token
             )
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,11 +89,22 @@ async def _user_token_get(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-def current_user_get(
+
+def validate_current_token(token_type: str, current_token_type: str):
+    if (current_token_type != token_type):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token type {current_token_type!r} expected {token_type!r}"
+        )
+
+def get_current_user(
+    token_type: str,
     credentials: HTTPAuthorizationCredentials = Depends(http_bearer)
 ) -> dict:
     try:
         payload: dict = decode_jwt(token=credentials.credentials)
+        current_token_type: str = payload.get(TOKEN_TYPE_FIELD)
+        validate_current_token(token_type, current_token_type)
     except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -103,8 +112,11 @@ def current_user_get(
         )
     return payload
 
+protected_access = partial(get_current_user, token_type=ACCESS_TOKEN_TYPE)
+protected_refresh = partial(get_current_user, token_type=REFRESH_TOKEN_TYPE)
+
 def login_required(
-    user: dict = Depends(current_user_get)
+    user: dict = Depends(protected_access)
 ) -> dict:
     if user:
         return user

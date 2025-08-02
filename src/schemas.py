@@ -6,8 +6,9 @@ class TunedModel(BaseModel):
         from_attributes = True
 
 class Token(BaseModel):
-    token_type: str
+    token_type: str = "Bearer"
     access_token: str
+    refresh_token: str | None = None
 
 class UserBase(BaseModel):
     login: str
