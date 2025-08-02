@@ -38,7 +38,7 @@ async def _user_create(
             result: Result = await session.execute(query)
             employee: dict = dict(result.mappings().fetchone())
 
-            body['password'] = hash_password(body.get('password'))
+            body['password'] = hash_password(body.get('password')).decode()
             body.update( {'employee_id': employee.get('id') } )
 
             query: Insert = insert(Users).values(**body)
@@ -70,8 +70,10 @@ async def _user_token_get(
     query: Select = select(Cast(Users.id, String).label('user_id'), Users.login, Users.password).where(Users.login == user.login)
     result: Result = await session.execute(query)
     if (response:= result.mappings().fetchone()):
+        password: str = user.password
         response: dict = dict(response)
-        if (verify_password(user.password, response.pop('password'))):
+        hashed_password: str = response.pop('password')
+        if (verify_password(password, hashed_password.encode())):
             logger.info(f'Get user: {str(response)}')
             return {
                 'access_token': access_security.create_access_token(
