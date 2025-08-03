@@ -65,9 +65,10 @@ docker compose build && docker compose up -d
 |-------|-----------------------|----------------------------------|---------------|
 | POST   | `/user/create`       | `{ "login": "string", "password": "string", "full_name": "string", "salary": 0, "next_raise_date": "2025-08-03 14:53:16" }` | `{ "user_id": "string", "employee_id": "string", "salary": 0, "next_raise_date": "2025-08-03 14:53:18", "login": "string", "full_name": "string" }` |
 | POST   | `/user/login`        | `{ "login": "string", "password": "string" }` | `{ "token_type": "Bearer", "access_token": "string", "refresh_token": "string" }`<br><br>`{ "detail": "Incorrect username or password" }` |
-| GET    | `/user/salary/get`   | Требуется аутентификацией Bearer по access токену | `{ "user_id": "string", "employee_id": "string", "salary": 0, "next_raise_date": "2025-08-03 15:13:53" }`<br><br>`{ "detail": "Invalid token error" }` <br><br>`{ "detail": "Not authenticated" }` |
-| POST   | `/token/refresh/`    | Требуется аутентификацией Bearer по refresh токену | `{ "token_type": "Bearer", "access_token": "string" }`<br><br>`{ "detail": "Invalid token type 'access' expected 'refresh'" }` |
+| GET    | `/user/salary/get`   | Требуется аутентификация Bearer по access токену | `{ "user_id": "string", "employee_id": "string", "salary": 0, "next_raise_date": "2025-08-03 15:13:53" }`<br><br>`{ "detail": "Invalid token error" }` <br><br>`{ "detail": "Not authenticated" }` |
+| POST   | `/token/refresh/`    | Требуется аутентификация Bearer по refresh токену | `{ "token_type": "Bearer", "access_token": "string" }`<br><br>`{ "detail": "Invalid token type 'access' expected 'refresh'" }` |
 
 Больше подробностей доступно по ссылкам:<br>
 Swagger UI: YOUR_URL/docs<br>
 ReDoc: YOUR_URL/redoc
+
