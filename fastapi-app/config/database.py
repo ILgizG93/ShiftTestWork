@@ -28,8 +28,6 @@ class DataBaseServer(Server):
         super().__init__(args[0], args[1], args[2], args[3])
         self.name = args[4]
         self._url_async = f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
-        # self._engine_async: AsyncEngine = create_async_engine(url=self._url_async, echo=False)
-        # self.session_async = async_sessionmaker(self._engine_async, class_=AsyncSession, expire_on_commit=False)
 
     async def get_session_async(self) -> AsyncGenerator[AsyncSession, None]:
         try:

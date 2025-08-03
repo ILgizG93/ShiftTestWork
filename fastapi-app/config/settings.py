@@ -9,7 +9,6 @@ from .database import DataBaseServer
 load_dotenv()
 
 class Settings(BaseSettings):
-    secret_key: str
     algorithm: str
     private_key_file: Path
     public_key_file: Path
