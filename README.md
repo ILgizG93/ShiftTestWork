@@ -31,7 +31,6 @@ cd ShiftTestWork/fastapi-app/
 cp .env.template .env
 nano .env
 ```
-> Обязательно указываем SECRET_KEY. Остальные параметры по желанию.
 
 - Генерируем приватный и публичный ключи для формирования токена
 > (если меняли значения в .env, то укажите валидные для себя данные)
@@ -71,4 +70,5 @@ docker compose build && docker compose up -d
 Больше подробностей доступно по ссылкам:<br>
 Swagger UI: YOUR_URL/docs<br>
 ReDoc: YOUR_URL/redoc
+
 
