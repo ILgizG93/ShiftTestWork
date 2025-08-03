@@ -1,7 +1,17 @@
 from datetime import UTC, datetime, timedelta
+from typing import Annotated, Callable
+import logging
+
 import jwt
+from fastapi import Depends, Response, status
+from sqlalchemy import Result, insert, exc
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.dml import ReturningInsert
 
 from config.settings import Settings
+from loggers import init_logger
+from src.models import Tokens
+from src.schemas import TokenAfterCreate, TokenCreate
 
 
 TOKEN_TYPE_FIELD: str = "type"
@@ -9,6 +19,9 @@ ACCESS_TOKEN_TYPE: str = "access"
 REFRESH_TOKEN_TYPE: str = "refresh"
 
 settings: Settings = Settings()
+session: Callable = settings.database.get_session_async
+DBSession = Annotated[AsyncSession, Depends(session)]
+logger: logging = init_logger("app")
 
 def encode_jwt(
     payload: dict,
@@ -82,3 +95,25 @@ def create_refresh_token(user: dict) -> str:
         token_data=jwt_payload,
         expire_timedelta=timedelta(days=settings.refresh_token_expire_days)
     )
+
+async def save_token_in_db(
+    body: TokenCreate,
+    session: DBSession
+) -> TokenAfterCreate:
+    body: dict = body.model_dump(exclude_none=True)
+    try:
+        async with session.begin():
+            query: ReturningInsert = insert(Tokens).values(**body).\
+                returning(Tokens.id, Tokens.user_id, Tokens.token, Tokens.expires_at, Tokens.is_active)
+            result: Result = await session.execute(query)
+            token: dict = dict(result.mappings().one())
+
+            logger.info(f'Save token with id {str(token.get("id"))!r}')
+            
+            return token
+    except exc.SQLAlchemyError as err:
+        logger.error(f'Save token: {err.args[0]}')
+        return Response(
+            content={ 'status_code': 500, 'error': err.args[0] }, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

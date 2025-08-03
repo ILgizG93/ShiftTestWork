@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import partial
 import logging
 from typing import Annotated, Callable
@@ -11,10 +12,10 @@ from jwt.exceptions import InvalidTokenError
 
 from config.settings import Settings
 from loggers import init_logger
-from src.handlers.token import ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE, TOKEN_TYPE_FIELD, create_access_token, create_refresh_token, decode_jwt
+from src.handlers.token import ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE, TOKEN_TYPE_FIELD, create_access_token, create_refresh_token, decode_jwt, save_token_in_db
 from src.handlers.password import hash_password, verify_password
 from src.models import Employees, Users
-from src.schemas import Token, User, UserAuth, UserCreate, UserSalary
+from src.schemas import Token, TokenCreate, User, UserAuth, UserCreate, UserSalary
 
 
 settings: Settings = Settings()
@@ -79,6 +80,14 @@ async def _user_token_get(
             logger.info(f'Get user: {str(user)}')
             access_token: str = create_access_token(user)
             refresh_token: str = create_refresh_token(user)
+            payload: dict = decode_jwt(token=access_token)
+            token: TokenCreate = TokenCreate(
+                user_id=payload.get('user_id'),
+                token=access_token,
+                expires_at=datetime.fromtimestamp(payload.get('exp'))
+            )
+            await session.close()
+            await save_token_in_db(token, session)
             return Token(
                 access_token=access_token,
                 refresh_token=refresh_token

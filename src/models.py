@@ -31,8 +31,8 @@ class Tokens(ShiftBase):
     __tablename__ = "tokens"
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    token: Mapped[str] = mapped_column(String(500), index=True)
+    token: Mapped[str] = mapped_column(String(4000), index=True)
     expires_at: Mapped[datetime]
-    is_active: Mapped[bool | None]
+    is_active: Mapped[bool] = mapped_column(nullable=True, default=True)
     
     user: Mapped["Users"] = relationship("Users", back_populates="token")

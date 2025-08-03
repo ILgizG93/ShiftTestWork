@@ -5,6 +5,16 @@ class TunedModel(BaseModel):
     class Config:
         from_attributes = True
 
+class TokenCreate(TunedModel):
+    user_id: str
+    token: str
+    expires_at: datetime
+
+class TokenAfterCreate(TokenCreate):
+    id: str
+    token: str
+    expires_at: datetime
+
 class Token(BaseModel):
     token_type: str = "Bearer"
     access_token: str
