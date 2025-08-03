@@ -15,9 +15,11 @@ class TokenAfterCreate(TokenCreate):
     token: str
     expires_at: datetime
 
-class Token(BaseModel):
+class AccessToken(BaseModel):
     token_type: str = "Bearer"
     access_token: str
+
+class Token(AccessToken):
     refresh_token: str | None = None
 
 class UserBase(BaseModel):

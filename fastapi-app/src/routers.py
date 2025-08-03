@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.settings import Settings
 from src.handlers.token import create_access_token
 from src.handlers.user import _user_create, _user_token_get, _user_salary_get, login_required, protected_refresh
-from src.schemas import Token, User, UserCreate, UserSalary
+from src.schemas import AccessToken, Token, User, UserCreate, UserSalary
 
 
 settings: Settings = Settings()
@@ -42,14 +42,14 @@ async def user_salary_get(
 
 @router.post(
     "/token/refresh/",
-    response_model=Token,
+    response_model=AccessToken,
     response_model_exclude_none=True,
     response_model_exclude_unset=True
 )
 def token_refresh(
     user: dict = Depends(protected_refresh)
-) -> Token:
+) -> AccessToken:
     access_token: str = create_access_token(user)
-    return Token(
+    return AccessToken(
         access_token=access_token
     )
